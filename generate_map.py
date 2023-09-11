@@ -11,18 +11,19 @@ try:
     arg = sys.argv[1]
 
     if os.path.isdir(arg):
-        current_directory = os.path.abspath(arg)
+        parent_directory = os.path.abspath(arg)
     else:
         print("Wrong directory!")
-        current_directory = os.getcwd()
-        print("Working in: " + str(current_directory))
+        parent_directory = os.getcwd()
+        print("Working in: " + str(parent_directory))
 except:
-    current_directory = os.getcwd()
-    print("No directory provided, working in: " + str(current_directory))
+    parent_directory = os.getcwd()
+    print("No directory provided, working in: " + str(parent_directory))
     
-m = folium.Map(location=[52, 14], zoom_start=5)
+m = folium.Map(location=[52, 14], zoom_start=6)
+counter = 0
 
-for root, dirs, files in os.walk(current_directory):
+for root, dirs, files in os.walk(parent_directory):
     for filename in files:
         if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
             image_path = os.path.join(root, filename)
@@ -64,18 +65,23 @@ for root, dirs, files in os.walk(current_directory):
                     with open(image_path, "rb") as image_file:
                         image_data = base64.b64encode(image_file.read()).decode()
                     
-                    img_popup = f'<img src="data:image/jpeg;base64,{image_data}" alt="{filename}" width="700">'
+                    img_popup = f'<img src="file://{image_path}" alt="{filename}" width="700">'
                     popup_content = f'{photo_info}<br>{exif_info}<br><br>{img_popup}'
                     
                     folium.Marker([latitude, longitude], popup=folium.Popup(popup_content, max_width=730)).add_to(m)
                     print(f'Processed: {filename}, Latitude: {latitude}, Longitude: {longitude}')
+                    counter += 1
                 else:
                     print(f'Skipped: {filename} (Invalid GPS data format)')
             else:
                 print(f'Skipped: {filename} (No GPS data found)')
 
-m.save(current_directory + 'map.html')
-print('Saved to: ' + str(os.path.join(os.getcwd(), 'map.html')))
+map_path = os.path.join(parent_directory, 'map.html')
+if not counter == 0:
+    m.save(map_path)
+    print('Saved to: ' + str(map_path))
+else:
+    print("Images without GPS info, no need to create map.")
 
 import webbrowser
-webbrowser.open(current_directory + 'map.html')
+webbrowser.open(map_path)
